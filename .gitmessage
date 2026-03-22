@@ -1,0 +1,29 @@
+# <type>: <subject>
+# │       │
+# │       └─⫸ Summary in present tense. Not capitalized. No period at the end.
+# │
+# └─⫸ Type: feat|fix|docs|style|refactor|test|chore
+
+# Examples:
+# feat: add guitar isolation using Demucs AI
+# fix: prevent NaN values in tone matcher
+# docs: update README with installation steps
+# test: add frequency analyzer unit tests
+# refactor: simplify profile generation logic
+
+# Body (optional):
+# More detailed explanation. Wrap at 72 chars.
+#
+# - Why this change was made
+# - Any relevant context
+# - Links to issues/tickets
+
+# Footer (optional):
+# Breaking Changes: describe what broke and migration path
+# Closes: #123
+# See also: #456, #789
+
+
+
+
+
