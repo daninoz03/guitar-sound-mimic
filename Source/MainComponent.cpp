@@ -9,6 +9,11 @@ MainComponent::MainComponent()
     recordingPlayback = std::make_unique<AudioPlayback>();
     guitarOnlyPlayback = std::make_unique<AudioPlayback>();
 
+    // Apply custom look and feel to all buttons
+    for (auto* btn : { &profileButton, &applyButton, &bypassButton,
+                       &listenDemoButton, &playRecordingButton, &guitarOnlyButton })
+        btn->setLookAndFeel (&lf);
+
     // ---- Row 1 buttons --------------------------------------------------
     addAndMakeVisible (profileButton);
     profileButton.setButtonText ("Start Profiling");
@@ -39,19 +44,18 @@ MainComponent::MainComponent()
     guitarOnlyButton.onClick = [this] { playGuitarOnly(); };
     guitarOnlyButton.setEnabled (false);
 
-    // ---- Status + level labels ------------------------------------------
+    // ---- Status label ---------------------------------------------------
     addAndMakeVisible (statusLabel);
     statusLabel.setText ("Requesting microphone access...", juce::dontSendNotification);
     statusLabel.setJustificationType (juce::Justification::centred);
-    statusLabel.setFont (juce::Font (18.0f, juce::Font::bold));
+    statusLabel.setFont (juce::Font (14.0f, juce::Font::bold));
+    statusLabel.setColour (juce::Label::textColourId, juce::Colour (0xffe8e8f2));
 
-    addAndMakeVisible (inputLevelLabel);
-    inputLevelLabel.setText ("Input:  0.0 dB", juce::dontSendNotification);
+    // Level labels are drawn manually in paint() using atomic values
+    inputLevelLabel .setVisible (false);
+    outputLevelLabel.setVisible (false);
 
-    addAndMakeVisible (outputLevelLabel);
-    outputLevelLabel.setText ("Output: 0.0 dB", juce::dontSendNotification);
-
-    setSize (880, 680);
+    setSize (900, 680);
 
     juce::RuntimePermissions::request (
         juce::RuntimePermissions::recordAudio,
@@ -62,11 +66,11 @@ MainComponent::MainComponent()
                 if (granted)
                 {
                     setAudioChannels (2, 2);
-                    statusLabel.setText ("Ready — microphone active", juce::dontSendNotification);
+                    statusLabel.setText ("Ready - microphone active", juce::dontSendNotification);
                 }
                 else
                 {
-                    statusLabel.setText ("Microphone access denied — check System Settings › Privacy",
+                    statusLabel.setText ("Microphone access denied - check System Settings > Privacy",
                                          juce::dontSendNotification);
                     profileButton.setEnabled (false);
                 }
@@ -159,96 +163,174 @@ void MainComponent::releaseResources()
 //==============================================================================
 void MainComponent::paint (juce::Graphics& g)
 {
-    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+    const int W = getWidth();
 
-    // Title
-    g.setColour (juce::Colours::white);
-    g.setFont (28.0f);
-    g.drawText ("Guitar Sound Mimic", getLocalBounds().removeFromTop (50),
-                juce::Justification::centred, true);
+    // =========================================================
+    // Background
+    // =========================================================
+    g.fillAll (juce::Colour (0xff0b0b14));
 
-    // Instructions box
-    const int boxX = 20, boxY = 58, boxW = getWidth() - 40, boxH = 185;
-    g.setColour (juce::Colour (0xff2a2a3a));
-    g.fillRoundedRectangle (static_cast<float>(boxX), static_cast<float>(boxY),
-                            static_cast<float>(boxW), static_cast<float>(boxH), 6.0f);
-    g.setColour (juce::Colours::lightgrey);
-    g.drawRoundedRectangle (static_cast<float>(boxX), static_cast<float>(boxY),
-                            static_cast<float>(boxW), static_cast<float>(boxH), 6.0f, 1.0f);
+    // Soft radial glow at top centre
+    juce::ColourGradient topGlow (juce::Colour (0xff1c1c38), W * 0.5f, 0.0f,
+                                  juce::Colour (0xff0b0b14), W * 0.5f, 180.0f, true);
+    g.setGradientFill (topGlow);
+    g.fillRect (0, 0, W, 180);
 
-    g.setColour (juce::Colours::lightyellow);
-    g.setFont (13.5f);
+    // =========================================================
+    // Title bar  (y = 0 .. 65)
+    // =========================================================
+    g.setColour (juce::Colour (0xfff5a623));
+    g.setFont (juce::Font (30.0f, juce::Font::bold));
+    g.drawText ("GUITAR SOUND MIMIC", 0, 8, W, 36, juce::Justification::centred);
+
+    g.setColour (juce::Colour (0xff7070a0));
+    g.setFont (juce::Font (12.5f));
+    g.drawText ("Real-time tone profiling & matching", 0, 42, W, 18, juce::Justification::centred);
+
+    // Amber divider line
+    g.setColour (juce::Colour (0xfff5a623).withAlpha (0.35f));
+    g.drawLine (W * 0.22f, 63.0f, W * 0.78f, 63.0f, 1.0f);
+
+    // =========================================================
+    // Instructions box  (y = 67 .. 67+kInstrH)
+    // =========================================================
+    const int bx = 20, by = 67, bw = W - 40, bh = 265;
+
+    // Box background with subtle gradient
+    juce::ColourGradient boxGrad (juce::Colour (0xff13132a), (float)bx, (float)by,
+                                  juce::Colour (0xff0e0e1e), (float)bx, (float)(by + bh), false);
+    g.setGradientFill (boxGrad);
+    g.fillRoundedRectangle ((float)bx, (float)by, (float)bw, (float)bh, 8.0f);
+    g.setColour (juce::Colour (0xff2e2e50));
+    g.drawRoundedRectangle ((float)bx + 0.5f, (float)by + 0.5f,
+                            (float)bw - 1.0f, (float)bh - 1.0f, 8.0f, 1.0f);
+
+    // "HOW TO USE" header inside box
+    g.setColour (juce::Colour (0xfff5a623));
+    g.setFont (juce::Font (10.5f, juce::Font::bold));
+    g.drawText ("HOW TO USE", bx + 14, by + 9, 90, 14, juce::Justification::left);
+    g.setColour (juce::Colour (0xff2e2e50));
+    g.drawLine ((float)(bx + 100), (float)(by + 16), (float)(bx + bw - 14), (float)(by + 16), 1.0f);
+
+    // Instruction steps — em-dashes replaced with colons for reliable rendering
+    g.setColour (juce::Colour (0xffbbbbd8));
+    g.setFont (juce::Font (12.5f));
     const juce::String instructions =
-        "HOW TO USE THIS APP\n\n"
-        "1.  PROFILE A TONE   — Click \"Start Profiling\", play or sing the reference sound near the mic "
-        "(or connect an audio interface and play a recording through it), then click \"Stop Profiling\".\n\n"
-        "2.  VERIFY RECORDING  — Click \"Play Back Recording\" to hear exactly what the mic captured.  "
-        "If you can't hear the tone clearly in the playback, re-profile with a clearer source.\n\n"
-        "3.  ISOLATE GUITAR    — Click \"Isolate Guitar\" to attempt AI source separation via Demucs "
-        "(install with: pip3 install demucs torch torchaudio).  If Demucs is not installed, a frequency "
-        "filter is applied instead — note this cannot remove instruments sharing the guitar frequency range.\n\n"
-        "4.  HEAR THE EFFECT   — Click \"Listen to Sample Applied Demo\" to hear a built-in guitar riff "
-        "with your captured tone applied via EQ.\n\n"
-        "5.  GO LIVE           — Connect your guitar, click \"Apply Profile\", and play — your signal "
-        "will be shaped in real-time to match the profiled tone.";
+        "1.  PROFILE A TONE: Click \"Start Profiling\", play reference audio near the mic "
+        "(or connect an audio interface), then click \"Stop Profiling\".\n\n"
+        "2.  VERIFY RECORDING: Click \"Play Back Recording\" to hear exactly what was captured. "
+        "Re-profile if the audio is unclear.\n\n"
+        "3.  ISOLATE GUITAR: Click \"Isolate Guitar\" to strip other instruments. Uses Demucs AI "
+        "if installed (pip3 install demucs torch torchaudio), otherwise applies a bandpass filter.\n\n"
+        "4.  HEAR THE EFFECT: Click \"Listen to Sample Applied Demo\" to hear a built-in guitar "
+        "riff with your profiled tone applied via EQ.\n\n"
+        "5.  GO LIVE: Connect your guitar, click \"Apply Profile\", and play in real-time to match "
+        "the profiled tone.";
 
     g.drawFittedText (instructions,
-                      boxX + 10, boxY + 8, boxW - 20, boxH - 12,
-                      juce::Justification::topLeft, 20);
+                      bx + 14, by + 26, bw - 28, bh - 34,
+                      juce::Justification::topLeft, 25);
 
-    // Level meters
-    const int meterY = boxY + boxH + 48;
-    g.setColour (juce::Colours::darkgrey);
-    g.fillRect (20, meterY, 380, 16);
-    g.fillRect (20, meterY + 22, 380, 16);
+    // =========================================================
+    // Level meters section  (y = 395 .. 453)
+    // =========================================================
+    const int mx = 20, my = 395, mw = W - 40;
+    const int barH = 18, barGap = 20;
+    const int labelW = 72;
 
-    float inNorm  = juce::jmap (inputLevel.load(),  -60.0f, 0.0f, 0.0f, 1.0f);
-    float outNorm = juce::jmap (outputLevel.load(), -60.0f, 0.0f, 0.0f, 1.0f);
-    g.setColour (juce::Colours::limegreen);
-    g.fillRect (20, meterY, static_cast<int>(380 * inNorm), 16);
-    g.setColour (juce::Colours::dodgerblue);
-    g.fillRect (20, meterY + 22, static_cast<int>(380 * outNorm), 16);
+    // Section label
+    g.setColour (juce::Colour (0xff5050a0));
+    g.setFont (juce::Font (10.0f, juce::Font::bold));
+    g.drawText ("LEVELS", mx, my, 60, 12, juce::Justification::left);
+    g.setColour (juce::Colour (0xff1e1e38));
+    g.drawLine ((float)(mx + 52), (float)(my + 6), (float)(mx + mw), (float)(my + 6), 1.0f);
+
+    // --- Input bar ---
+    const int inBarY  = my + 16;
+    const int outBarY = inBarY + barH + barGap;
+    const int barX    = mx + labelW;
+    const int barW    = mw - labelW;
+
+    g.setColour (juce::Colour (0xff0e0e1e));
+    g.fillRoundedRectangle ((float)barX, (float)inBarY, (float)barW, (float)barH, 3.0f);
+
+    float inNorm  = juce::jlimit (0.0f, 1.0f, juce::jmap (inputLevel.load(),  -60.0f, 0.0f, 0.0f, 1.0f));
+    float outNorm = juce::jlimit (0.0f, 1.0f, juce::jmap (outputLevel.load(), -60.0f, 0.0f, 0.0f, 1.0f));
+
+    if (inNorm > 0.0f)
+    {
+        juce::ColourGradient inGrad (juce::Colour (0xff1eaa4a), (float)barX, 0.0f,
+                                     juce::Colour (0xffe8c020), (float)(barX + barW), 0.0f, false);
+        g.setGradientFill (inGrad);
+        g.fillRoundedRectangle ((float)barX, (float)inBarY,
+                                barW * inNorm, (float)barH, 3.0f);
+    }
+
+    // --- Output bar ---
+    g.setColour (juce::Colour (0xff0e0e1e));
+    g.fillRoundedRectangle ((float)barX, (float)outBarY, (float)barW, (float)barH, 3.0f);
+
+    if (outNorm > 0.0f)
+    {
+        juce::ColourGradient outGrad (juce::Colour (0xff2060c8), (float)barX, 0.0f,
+                                      juce::Colour (0xff8040d8), (float)(barX + barW), 0.0f, false);
+        g.setGradientFill (outGrad);
+        g.fillRoundedRectangle ((float)barX, (float)outBarY,
+                                barW * outNorm, (float)barH, 3.0f);
+    }
+
+    // Labels and dB values
+    g.setFont (juce::Font (11.5f, juce::Font::bold));
+    g.setColour (juce::Colour (0xff7070a0));
+    g.drawText ("INPUT",  mx, inBarY,  labelW - 4, barH, juce::Justification::left);
+    g.drawText ("OUTPUT", mx, outBarY, labelW - 4, barH, juce::Justification::left);
+
+    g.setColour (juce::Colour (0xffe8e8f2));
+    g.setFont (juce::Font (10.5f));
+    g.drawText (juce::String (inputLevel .load(), 1) + " dB",
+                barX + 4, inBarY,  barW - 8, barH, juce::Justification::centredRight);
+    g.drawText (juce::String (outputLevel.load(), 1) + " dB",
+                barX + 4, outBarY, barW - 8, barH, juce::Justification::centredRight);
+
+    // Row separators above button rows
+    g.setColour (juce::Colour (0xff1e1e38));
+    g.drawLine (20.0f, 492.0f, (float)(W - 20), 492.0f, 1.0f);
+    g.drawLine (20.0f, 558.0f, (float)(W - 20), 558.0f, 1.0f);
+
+    // Row labels
+    g.setColour (juce::Colour (0xff5050a0));
+    g.setFont (juce::Font (10.0f, juce::Font::bold));
+    g.drawText ("PROFILING CONTROLS",  20, 484, 200, 10, juce::Justification::left);
+    g.drawText ("LISTENING TOOLS",     20, 550, 200, 10, juce::Justification::left);
 }
 
 void MainComponent::resized()
 {
-    const int instrBoxH = 185;
+    const int W   = getWidth();
     const int pad = 20;
+    const int sp  = 8;     // button spacing
 
-    auto area = getLocalBounds().reduced (pad);
-    area.removeFromTop (50);              // title
-    area.removeFromTop (instrBoxH + 10); // instructions box
+    // Status label — sits between instructions box and meters
+    statusLabel.setBounds (pad, 342, W - 2 * pad, 34);
 
-    // Status label
-    statusLabel.setBounds (area.removeFromTop (32));
-    area.removeFromTop (8);
-
-    // Level meters (drawn in paint) + labels
-    area.removeFromTop (50); // space for meter bars
-    inputLevelLabel.setBounds  (area.removeFromTop (20));
-    outputLevelLabel.setBounds (area.removeFromTop (20));
-    area.removeFromTop (14);
-
-    // Row 1: profiling controls
+    // Button row 1: y=496, h=50  (25px below output meter bottom at ~467)
     {
-        auto row = area.removeFromTop (46);
-        const int sp = 8;
-        const int bw = (row.getWidth() - sp * 2) / 3;
-        profileButton.setBounds (row.removeFromLeft (bw));  row.removeFromLeft (sp);
-        applyButton  .setBounds (row.removeFromLeft (bw));  row.removeFromLeft (sp);
-        bypassButton .setBounds (row);
+        const int y  = 496;
+        const int bh = 50;
+        const int bw = (W - 2 * pad - sp * 2) / 3;
+        profileButton.setBounds (pad,               y, bw, bh);
+        applyButton  .setBounds (pad + bw + sp,     y, bw, bh);
+        bypassButton .setBounds (pad + (bw + sp)*2, y, W - 2*pad - (bw + sp)*2, bh);
     }
 
-    area.removeFromTop (10);
-
-    // Row 2: diagnostic / listening tools
+    // Button row 2: y=562, h=50
     {
-        auto row = area.removeFromTop (46);
-        const int sp = 8;
-        const int bw = (row.getWidth() - sp * 2) / 3;
-        listenDemoButton    .setBounds (row.removeFromLeft (bw));  row.removeFromLeft (sp);
-        playRecordingButton .setBounds (row.removeFromLeft (bw));  row.removeFromLeft (sp);
-        guitarOnlyButton    .setBounds (row);
+        const int y  = 562;
+        const int bh = 50;
+        const int bw = (W - 2 * pad - sp * 2) / 3;
+        listenDemoButton    .setBounds (pad,               y, bw, bh);
+        playRecordingButton .setBounds (pad + bw + sp,     y, bw, bh);
+        guitarOnlyButton    .setBounds (pad + (bw + sp)*2, y, W - 2*pad - (bw + sp)*2, bh);
     }
 }
 
@@ -265,7 +347,7 @@ void MainComponent::timerCallback()
     {
         currentMode = ProcessingMode::Bypass;
         listenDemoButton.setEnabled (true);
-        statusLabel.setText ("Demo finished — profile ready", juce::dontSendNotification);
+        statusLabel.setText ("Demo finished - profile ready", juce::dontSendNotification);
     }
 
     // Recording playback finished
@@ -315,7 +397,7 @@ void MainComponent::startProfiling()
         }
         else
         {
-            statusLabel.setText ("Not enough audio — profile 3+ seconds and try again",
+            statusLabel.setText ("Not enough audio - profile 3+ seconds and try again",
                                  juce::dontSendNotification);
             profileButton.setButtonText ("Start Profiling");
         }
@@ -340,7 +422,7 @@ void MainComponent::applyProfile()
     {
         matcher->setProfile (currentProfile);
         currentMode = ProcessingMode::Matching;
-        statusLabel.setText ("Profile applied — play your guitar!", juce::dontSendNotification);
+        statusLabel.setText ("Profile applied - play your guitar!", juce::dontSendNotification);
     }
 }
 
@@ -375,7 +457,7 @@ void MainComponent::playGuitarOnly()
 {
     if (! recordingPlayback->hasSamples())
     {
-        statusLabel.setText ("No recording yet — profile something first", juce::dontSendNotification);
+        statusLabel.setText ("No recording yet - profile something first", juce::dontSendNotification);
         return;
     }
 
@@ -483,7 +565,7 @@ void MainComponent::runDemucsAsync()
 
     if (! saveRecordingToWav (tempRecordingFile))
     {
-        statusLabel.setText ("Could not write temp recording — falling back to frequency filter",
+        statusLabel.setText ("Could not write temp recording - falling back to frequency filter",
                              juce::dontSendNotification);
         applyGuitarBandpass();
         return;
@@ -505,7 +587,7 @@ void MainComponent::runDemucsAsync()
 
     if (! script.existsAsFile())
     {
-        statusLabel.setText ("Demucs script not found — falling back to frequency filter",
+        statusLabel.setText ("Demucs script not found - falling back to frequency filter",
                              juce::dontSendNotification);
         applyGuitarBandpass();
         return;
@@ -522,13 +604,13 @@ void MainComponent::runDemucsAsync()
     if (demucsProcess->start (juce::StringArray { "/bin/bash", "-l", "-c", shellCmd }))
     {
         guitarOnlyButton.setEnabled (false);
-        statusLabel.setText ("Running Demucs AI separation… (30–60 s) — please wait",
+        statusLabel.setText ("Running Demucs AI separation... (30-60 s) - please wait",
                              juce::dontSendNotification);
     }
     else
     {
         demucsProcess.reset();
-        statusLabel.setText ("Could not start Python — falling back to frequency filter",
+        statusLabel.setText ("Could not start Python - falling back to frequency filter",
                              juce::dontSendNotification);
         applyGuitarBandpass();
     }
@@ -553,7 +635,7 @@ void MainComponent::checkDemucsProgress()
         // Demucs not installed or failed — fall back to the frequency filter
         // and tell the user how to get the real thing
         statusLabel.setText ("Demucs not installed (exit " + juce::String (exitCode) + ") "
-                             "— using frequency filter instead.  "
+                             "- using frequency filter instead.  "
                              "For true isolation: pip3 install demucs torch torchaudio",
                              juce::dontSendNotification);
         applyGuitarBandpass();
