@@ -12,6 +12,64 @@ class MainComponent : public juce::AudioAppComponent,
                       public juce::Timer
 {
 public:
+    // Custom LookAndFeel — dark audio-tool aesthetic
+    struct GuitarLookAndFeel : public juce::LookAndFeel_V4
+    {
+        GuitarLookAndFeel()
+        {
+            setColour (juce::ResizableWindow::backgroundColourId, juce::Colour (0xff0b0b14));
+        }
+
+        void drawButtonBackground (juce::Graphics& g, juce::Button& btn,
+                                   const juce::Colour&, bool isHighlighted, bool isDown) override
+        {
+            const auto bounds = btn.getLocalBounds().toFloat().reduced (0.5f);
+            juce::Colour fill, border;
+
+            if (! btn.isEnabled())
+            {
+                fill   = juce::Colour (0xff111120);
+                border = juce::Colour (0xff1e1e2e);
+            }
+            else if (isDown)
+            {
+                fill   = juce::Colour (0xfff5a623);
+                border = juce::Colour (0xffffc04a);
+            }
+            else if (isHighlighted)
+            {
+                fill   = juce::Colour (0xff252540);
+                border = juce::Colour (0xfff5a623);
+            }
+            else
+            {
+                fill   = juce::Colour (0xff1a1a2c);
+                border = juce::Colour (0xff3a3a5a);
+            }
+
+            g.setColour (fill);
+            g.fillRoundedRectangle (bounds, 6.0f);
+            g.setColour (border);
+            g.drawRoundedRectangle (bounds, 6.0f, 1.5f);
+        }
+
+        void drawButtonText (juce::Graphics& g, juce::TextButton& btn,
+                             bool /*isHighlighted*/, bool isDown) override
+        {
+            juce::Colour textCol;
+            if (! btn.isEnabled())
+                textCol = juce::Colour (0xff383852);
+            else if (isDown)
+                textCol = juce::Colour (0xff0b0b14);
+            else
+                textCol = juce::Colour (0xffe8e8f2);
+
+            g.setColour (textCol);
+            g.setFont (juce::Font (12.5f, juce::Font::bold));
+            g.drawFittedText (btn.getButtonText(), btn.getLocalBounds(),
+                              juce::Justification::centred, 2);
+        }
+    };
     MainComponent();
     ~MainComponent() override;
 
@@ -85,6 +143,8 @@ private:
     // Audio level monitoring (written on audio thread, read on message thread)
     std::atomic<float> inputLevel  { 0.0f };
     std::atomic<float> outputLevel { 0.0f };
+
+    GuitarLookAndFeel lf;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
