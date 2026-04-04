@@ -378,7 +378,7 @@ git push
 
 - **PUSH_TO_GIT.md** - Quick push guide
 - **GIT_SETUP.md** - Comprehensive git guide
-- **START_HERE.md** - Project overview
+- **README.md** — Project overview and quick start
 
 ---
 
