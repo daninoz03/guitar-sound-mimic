@@ -2,22 +2,77 @@
 
 A real-time guitar tone profiling and matching system built with JUCE. This application can analyze reference audio (songs, recordings) to extract tone characteristics and apply them to live guitar input.
 
-## 🎸 NEW: AI-Powered Guitar Isolation
+Python tools can **isolate guitar from full mixes** (Demucs) so you can profile tones from commercial tracks, not only guitar-only sources. Details: [tools/README.md](tools/README.md).
 
-The app now includes Python tools to **extract guitar tracks from mixed audio** using state-of-the-art AI (Demucs). This solves the problem of profiling guitar tones from full songs with drums, bass, vocals, etc.
+## Quick start
 
-**Quick Start:**
+From a fresh clone to profiling a tone is roughly **10 minutes** after downloads (longer the first time Demucs runs).
+
+### 1. Build the app (one time)
+
+**Prerequisites:** CMake 3.15+, C++17 toolchain (on macOS: Xcode Command Line Tools).
+
 ```bash
-# Install dependencies
-pip install demucs torch torchaudio
-
-# Extract guitar from any song
-python tools/separate_guitar.py song.mp3 guitar_only.wav
-
-# Load guitar_only.wav in the app and profile it!
+cd /path/to/guitar-sound-mimic
+./setup.sh
 ```
 
-See [tools/README.md](tools/README.md) for detailed instructions.
+This clones JUCE, configures CMake, and builds into `build/`. If it fails, install tools and retry:
+
+```bash
+xcode-select --install    # macOS: compiler toolchain
+brew install cmake        # macOS: if CMake is missing
+```
+
+**Optional:** `./run_tests.sh` checks that unit tests pass.
+
+### 2. Install Python tools (one time)
+
+```bash
+pip3 install demucs torch torchaudio soundfile numpy scipy
+```
+
+### 3. Isolate guitar and profile
+
+```bash
+python3 tools/separate_guitar.py your_song.mp3 guitar_only.wav
+```
+
+Then launch the app, play `guitar_only.wav` while profiling, and use **Apply Profile** for your guitar input. UI steps and tips are in [Usage](#usage) below; separation options and edge cases are in [tools/README.md](tools/README.md).
+
+**macOS — run the app:**
+
+```bash
+open ./build/GuitarSoundMimic_artefacts/Release/GuitarSoundMimic.app
+```
+
+Or run the binary directly:
+
+```bash
+./build/GuitarSoundMimic_artefacts/Release/GuitarSoundMimic.app/Contents/MacOS/GuitarSoundMimic
+```
+
+On Windows and Linux, use the executable under `build/GuitarSoundMimic_artefacts/Release/` for your platform (see [Building from source](#building-from-source)).
+
+### Quick troubleshooting
+
+| Issue | What to try |
+|-------|-------------|
+| `cmake` not found | Install CMake (e.g. `brew install cmake` on macOS). |
+| `demucs` / `torch` errors | Re-run the `pip3 install` line above. |
+| No audio I/O | **Options → Audio Settings**; reconnect the interface; try a smaller buffer size for latency. |
+| Build errors | Xcode/CLI tools installed; JUCE cloned; see [BUILDING.md](BUILDING.md). |
+
+### Build without `setup.sh`
+
+```bash
+git clone --depth 1 https://github.com/juce-framework/JUCE.git
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake --build . --config Release
+```
+
+Use [Building from source](#building-from-source) for platform-specific paths and options.
 
 ## Features
 
@@ -72,7 +127,7 @@ See [Tests/README.md](Tests/README.md) for detailed testing documentation.
 
 1. **Clone JUCE framework**:
 ```bash
-cd /Users/dan.obrien/code/guitar-sound-mimic
+cd /path/to/guitar-sound-mimic
 git clone https://github.com/juce-framework/JUCE.git
 ```
 

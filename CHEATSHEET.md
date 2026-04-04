@@ -180,7 +180,7 @@ python tools/separate_guitar.py rock_song.mp3 rock_tone.wav
 
 - **README.md** - Full documentation
 - **BUILDING.md** - Build instructions (all platforms)
-- **QUICKSTART.md** - Beginner's guide
+- **README.md** — Quick start and full docs
 - **tools/README.md** - Guitar separation details
 - **CHEATSHEET.md** - This file!
 

@@ -296,10 +296,8 @@ run_tests.sh                    # Quick test runner script
 Updated:
 ├── CMakeLists.txt              # Added test target
 ├── .gitignore                  # Ignore test artifacts
-├── README.md                   # Added testing section
-├── CHEATSHEET.md               # Added test commands
-├── RUN_ME_FIRST.md             # Added test step
-└── START_HERE.md               # Mentioned testing
+├── README.md                   # Testing section; quick start (optional ./run_tests.sh)
+└── CHEATSHEET.md               # Added test commands
 ```
 
 ## Summary
